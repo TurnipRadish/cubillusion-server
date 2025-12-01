@@ -1,5 +1,7 @@
 scoreboard objectives add cubi_uid dummy
 
+forceload add -1 -1 1 1
+
 team add cubi_player_com
 team modify cubi_player_com prefix ""
 
