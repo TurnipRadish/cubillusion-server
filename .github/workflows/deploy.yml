@@ -3,6 +3,9 @@ name: Deploy to Minecraft Server
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'datapacks/**'  # 只有datapacks目录下的文件变化才触发
+      - '.github/workflows/deploy.yml'  # 允许workflow自身修改也触发
 
 jobs:
   deploy:
