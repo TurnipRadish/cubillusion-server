@@ -166,29 +166,29 @@ jobs:
         TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
         ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
     
-        # 创建 Release（补全必填字段）
+        # 创建 Release（确保 body 不为空，转义正确）
         response=$(curl -s -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
           -H "Content-Type: application/json" \
-          -d '{
-            "tag_name": "'"$TAG_NAME"'",
-            "name": "'"$TAG_NAME"'",
-            "body": "Auto release",
-            "target_commitish": "main"
-          }' \
+          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"auto\",\"target_commitish\":\"main\"}" \
           "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
     
-        RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
-        [ -z "$RELEASE_ID" ] && { echo "❌ 创建失败: $response"; exit 1; }
+        # 直接用 grep 提取数字（更稳定）
+        RELEASE_ID=$(echo "$response" | sed -n 's/.*"id":\ *\([0-9]*\).*/\1/p' | head -1)
+        if [ -z "$RELEASE_ID" ]; then
+          echo "❌ 创建失败: $response"
+          exit 1
+        fi
+        echo "✅ Release ID: $RELEASE_ID"
     
         # 上传文件
         curl -s -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
           -F "file=@$ARCHIVE" \
           -F "name=$ARCHIVE" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files" || true
     
-        # 输出直链
+        # 生成直链
         DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
