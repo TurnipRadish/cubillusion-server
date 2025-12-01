@@ -50,16 +50,28 @@ jobs:
             echo "✅ 原resourcepacks已备份"
           fi
 
-          # 自动创建符号链接（文件已上传，可以安全创建）
-          ln -sf /home/admin/mc-git-repo/datapacks /home/admin/minecraft-server/world/datapacks
-          ln -sf /home/admin/mc-git-repo/resourcepacks /home/admin/minecraft-server/resourcepacks
+          # 创建新目录
+          mkdir -p "/home/admin/minecraft-server/world/datapacks"
+          mkdir -p "/home/admin/minecraft-server/resourcepacks"
           
-          echo "✅ 符号链接创建完成"
-          echo "当前文件结构:"
-          ls -la /home/admin/mc-git-repo/
-          echo "符号链接状态:"
-          ls -la /home/admin/minecraft-server/world/datapacks
-          ls -la /home/admin/minecraft-server/resourcepacks
+          # 从Git仓库复制文件到Minecraft服务器目录
+          echo "📁 同步数据包..."
+          if [ -d "/home/admin/mc-git-repo/datapacks" ]; then
+            cp -r "/home/admin/mc-git-repo/datapacks/"* "/home/admin/minecraft-server/world/datapacks/" 2>/dev/null || true
+          fi
+          
+          echo "📁 同步资源包..."
+          if [ -d "/home/admin/mc-git-repo/resourcepacks" ]; then
+            cp -r "/home/admin/mc-git-repo/resourcepacks/"* "/home/admin/minecraft-server/resourcepacks/" 2>/dev/null || true
+          fi
+          
+          # 设置正确权限
+          chown -R admin:admin "/home/admin/minecraft-server/world/datapacks"
+          chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
+          chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
+          chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
+          
+          echo "✅ 文件同步完成"
 
           # 重启服务器
           sleep 5
