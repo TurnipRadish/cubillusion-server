@@ -62,29 +62,58 @@ jobs:
           ls -la /home/admin/minecraft-server/resourcepacks
 
           # 检测并重启Minecraft服务器
+          # 检测并重启Minecraft服务器
           echo "🔄 检查Minecraft服务器状态..."
-          if screen -list | grep -q "mc"; then
-            echo "🎮 检测到mc服务器正在运行，执行重启..."
-            # 安全停止服务器
-            screen -S mc -X quit
-            echo "⏳ 等待服务器停止..."
-            sleep 10
-            # 确保进程完全停止
-            pkill -f "server.jar" || true
-            sleep 5
-          fi
+          
+          # 停止可能运行的服务器
+          pkill -f "server.jar" || true
+          sleep 5
           
           # 启动服务器
           echo "🚀 启动Minecraft服务器..."
-          cd /home/admin/minecraft-server
+          cd /home/***/minecraft-server
           ./start.sh
           sleep 10
           
-          # 验证启动状态
+          # 更可靠的启动验证（多种检测方式）
+          echo "=== 详细启动状态检查 ==="
+          echo "1. Screen会话列表:"
+          screen -list
+          echo "2. Java进程检查:"
+          pgrep -f "server.jar" && echo "✅ 找到server.jar进程" || echo "❌ 未找到server.jar进程"
+          echo "3. 所有screen会话:"
+          screen -ls
+          
+          # 使用多种方式验证启动成功
           if screen -list | grep -q "mc"; then
-            echo "✅ Minecraft服务器重启成功"
+            echo "✅ 方式1: screen检测到mc会话"
+            SCREEN_SUCCESS=true
+          else
+            echo "❌ 方式1: screen未检测到mc会话"
+            SCREEN_SUCCESS=false
+          fi
+          
+          if pgrep -f "server.jar" > /dev/null; then
+            echo "✅ 方式2: 检测到server.jar进程"
+            PROCESS_SUCCESS=true
+          else
+            echo "❌ 方式2: 未检测到server.jar进程"
+            PROCESS_SUCCESS=true
+          fi
+          
+          # 只要进程存在就认为启动成功
+          if pgrep -f "server.jar" > /dev/null; then
+            echo "🎉 Minecraft服务器启动成功！"
+            echo "📊 服务器信息:"
+            ps aux | grep server.jar | grep -v grep
           else
             echo "❌ Minecraft服务器启动失败"
+            echo "🔍 调试信息:"
+            echo "当前目录: $(pwd)"
+            echo "start.sh内容:"
+            cat start.sh
+            echo "文件列表:"
+            ls -la
             exit 1
           fi
           
