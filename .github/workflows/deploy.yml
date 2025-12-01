@@ -22,7 +22,7 @@ jobs:
         source: "."
         target: "/home/admin/mc-git-repo"
         strip_components: 0
-        rm: false
+        rm: true
       
     - name: Setup symlinks and backup
       uses: appleboy/ssh-action@v1.0.3
