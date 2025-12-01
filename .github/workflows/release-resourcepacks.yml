@@ -92,67 +92,16 @@ jobs:
         # 清理临时目录
         rm -rf temp_combine
 
-    # - name: Copy archive to repository root and commit
-    #   run: |
-    #     # 提交到main分支
-    #     git config --global user.name "GitHub Actions"
-    #     git config --global user.email "actions@github.com"
-    #     git add "${{ steps.create_archive.outputs.archive_name }}"
-    #     git commit -m "feat: add merged resourcepack for CDN - ${{ steps.version.outputs.timestamp }}"
-    #     git push
-    
-    # - name: Create Resource Pack Release
-    #   uses: softprops/action-gh-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     tag_name: resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}
-    #     name: "合并资源包 v1.0.${{ github.run_number }}"
-    #     body: |
-    #       ## 🎨 资源包平铺合并发布
-          
-    #       ### 合并方式
-    #       - **平铺合并**: 所有资源包的文件直接合并到同一目录
-    #       - **冲突处理**: 同名文件按处理顺序覆盖（后处理的覆盖先处理的）
-    #       - **文件冲突数**: ${{ steps.create_archive.outputs.conflict_count || 0 }} 个
-          
-    #       ### 使用说明
-    #       1. 下载合并包并解压到Minecraft的resourcepacks目录
-    #       2. 在游戏中启用此资源包即可获得所有资源包的效果
-    #       3. 同名文件已自动处理，无需手动操作
-          
-    #       ### 发布信息
-    #       | 项目 | 详情 |
-    #       |------|------|
-    #       | **版本** | v1.0.${{ github.run_number }} |
-    #       | **包含资源包** | ${{ steps.version.outputs.pack_count }} 个 |
-    #       | **资源包列表** | ${{ steps.version.outputs.pack_names }} |
-    #       | **提交哈希** | `${{ steps.version.outputs.short_sha }}` |
-    #       | **触发者** | @${{ github.actor }} |
-    #       | **发布时间** | ${{ github.event.head_commit.timestamp }} |
-          
-    #       ### 压缩包信息
-    #       - **文件名**: `${{ steps.create_archive.outputs.archive_name }}`
-    #       - **包含目录**: 所有resourcepacks下的子文件夹
-    #       - **格式**: ZIP压缩包
-          
-    #       ### 使用说明
-    #       1. 下载 `${{ steps.create_archive.outputs.archive_name }}`
-    #       2. 解压到Minecraft的resourcepacks目录
-    #       3. 在游戏中选择需要的资源包
-          
-    #       ### 变更内容
-    #       **提交信息:**  
-    #       ${{ github.event.head_commit.message }}
-          
-    #       ---
-    #       *🤖 自动合并生成 - [查看工作流](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-    #     draft: false
-    #     prerelease: false
-    #     files: |
-    #       ${{ steps.create_archive.outputs.archive_name }}
-    #       # 移除了不存在的README.md和LICENSE文件
 
+    - name: Upload ZIP to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "cubi-merged-resourcepack.zip"
+        target: "/home/admin/minecraft-server/resourcepacks/"
+    
     - name: Upload and update server config
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -162,20 +111,19 @@ jobs:
         script: |
           cd /home/admin/minecraft-server/resourcepacks/
           
-          # 上传并覆盖固定名称文件
-          echo "📤 上传资源包到服务器..."
+          # 检查文件是否上传成功
+          if [ -f "cubi-merged-resourcepack.zip" ]; then
+            echo "✅ 资源包上传成功"
+            ls -la cubi-merged-resourcepack.zip
+          else
+            echo "❌ 资源包上传失败"
+            exit 1
+          fi
           
-          # 更新服务器配置文件中的资源包URL
+          # 获取服务器IP并更新配置
           SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-          RESOURCE_PACK_URL="http://$SERVER_IP/download/cubi-merged-resourcepack.zip"
+          sed -i "s|^resource-pack=.*|resource-pack=http://$SERVER_IP/download/cubi-merged-resourcepack.zip|" ../server.properties
           
-          # 更新server.properties
-          sed -i "s|^resource-pack=.*|resource-pack=$RESOURCE_PACK_URL|" /home/admin/minecraft-server/server.properties
-          
-          echo "✅ 资源包URL已更新: $RESOURCE_PACK_URL"
-          echo "📋 当前配置:"
-          grep "^resource-pack=" /home/admin/minecraft-server/server.properties
-          
-          # 重启Minecraft服务器使配置生效（根据需要取消注释）
-          # cd /home/admin/minecraft-server
-          # ./restart.sh
+          echo "✅ 配置更新完成"
+          grep "^resource-pack=" ../server.properties
+
