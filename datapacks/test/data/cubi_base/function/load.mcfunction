@@ -17,15 +17,15 @@ forceload add -1 -1 1 1
 
 # 设置普通玩家队伍
 team add cubi_player_com
-team modify cubi_player_com prefix {text:"[CM] ",color:"#a4a4a4"}
+team modify cubi_player_com prefix {text:"[玩家] ",color:"#a4a4a4"}
 
 # 设置参观玩家队伍
 team add cubi_player_sp
-team modify cubi_player_sp prefix {text:"[SP] ",color:"#9abb9d"}
+team modify cubi_player_sp prefix {text:"[访客] ",color:"#9abb9d"}
 
 # 设置管理员玩家队伍
 team add cubi_player_op
-team modify cubi_player_op prefix {text:"[OP] ",color:"#db41cb"}
+team modify cubi_player_op prefix {text:"[管理] ",color:"#db41cb"}
 
 # 游戏规则
 gamerule keep_inventory true
