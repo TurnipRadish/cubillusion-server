@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "A simple pack for testing purposes",
+    "min_format": [0, 9999],
+    "max_format": [0, 9999]
+  }
+}
