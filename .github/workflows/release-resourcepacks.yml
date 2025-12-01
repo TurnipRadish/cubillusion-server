@@ -166,28 +166,22 @@ jobs:
         TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
         ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
         
-        # 删除已存在的Release（避免重复）
-        curl -s -X DELETE \
-          -H "Authorization: token $GITEE_TOKEN" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/tags/$TAG_NAME" || true
-        
-        # 创建Release时添加prerelease标记
+        # 创建Release
         response=$(curl -s -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"资源包文件\",\"prerelease\":true}" \
+          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"资源包文件\"}" \
           "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
         
         RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
         
-        # 使用assets接口上传（关键修改）
+        # 使用multipart/form-data格式上传（关键修改）
         curl -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @"$ARCHIVE" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/assets?name=$ARCHIVE"
+          -F "file=@$ARCHIVE;type=application/zip" \
+          -F "name=$ARCHIVE" \
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
         
-        # 生成assets下载链接
         DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
