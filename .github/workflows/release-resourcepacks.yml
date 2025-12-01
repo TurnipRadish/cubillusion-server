@@ -176,15 +176,29 @@ jobs:
         script: |
           cd /home/admin/minecraft-server
           
-          # 停止可能存在的旧HTTP服务器
-          pkill -f "python3 -m http.server" || true
+          # 更安全的方式停止旧HTTP服务器（只杀特定进程）
+          pkill -f "python3 -m http.server 8000" || true
+          sleep 1
           
-          # 在后台启动Python HTTP服务器（端口8000）
-          nohup python3 -m http.server 8000 --directory resourcepacks > /dev/null 2>&1 &
+          # 启动Python HTTP服务器
+          nohup python3 -m http.server 8000 --directory resourcepacks > http-server.log 2>&1 &
+          sleep 2
           
-          # 获取服务器公网IP（或使用域名）
-          SERVER_IP=$(curl -s ifconfig.me)
+          # 检查服务器是否启动成功
+          if pgrep -f "python3 -m http.server 8000" > /dev/null; then
+            echo "✅ HTTP服务器启动成功"
+          else
+            echo "❌ HTTP服务器启动失败"
+            cat http-server.log || true
+          fi
+          
+          # 获取服务器公网IP
+          SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
+          echo "服务器IP: $SERVER_IP"
           
           # 更新服务器配置
           sed -i "s|^resource-pack=.*|resource-pack=http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}|" server.properties
           echo "✅ 资源包URL: http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}"
+          
+          # 显示当前配置
+          grep "^resource-pack=" server.properties
