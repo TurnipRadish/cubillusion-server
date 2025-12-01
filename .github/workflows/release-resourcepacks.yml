@@ -158,7 +158,7 @@ jobs:
         source: "${{ steps.create_archive.outputs.archive_name }}"
         target: "/home/admin/minecraft-server/resourcepacks/"
     
-    - name: Update server.properties with local path
+    - name: Start local HTTP server for resourcepack
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -166,8 +166,14 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /home/admin/minecraft-server
-          # 使用本地文件路径而不是URL
-          sed -i "s|^resource-pack=.*|resource-pack=./resourcepacks/${{ steps.create_archive.outputs.archive_name }}|" server.properties
+          # 上传资源包到服务器
+          cp "${{ steps.create_archive.outputs.archive_name }}" resourcepacks/
+          
+          # 使用Python启动简单的HTTP服务器（端口8080）
+          nohup python3 -m http.server 8080 --directory resourcepacks/ > http-server.log 2>&1 &
+          
+          # 更新为本地服务器链接
+          sed -i "s|^resource-pack=.*|resource-pack=http://localhost:8080/${{ steps.create_archive.outputs.archive_name }}|" server.properties
 
     # - name: Update server.properties with resourcepack URL
     #   uses: appleboy/ssh-action@v1.0.3
