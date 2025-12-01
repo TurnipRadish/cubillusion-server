@@ -34,6 +34,10 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          if screen -list | grep -q "mc"; then
+            screen -S mc -X stuff "say 正在同步数据包文件...^M"
+          fi
+
           set -x
           echo "🚀 开始设置符号链接..."
           
@@ -73,6 +77,10 @@ jobs:
           chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
           chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
           chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
+
+          if screen -list | grep -q "mc"; then
+            screen -S mc -X stuff "say 已同步数据包文件^M"
+          fi
           
           echo "✅ 文件同步完成"          
           echo "🎉 部署流程全部完成！"
