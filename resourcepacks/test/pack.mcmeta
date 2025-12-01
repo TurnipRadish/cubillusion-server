@@ -1,6 +1,6 @@
 {
   "pack":{
-    "description": "示例资源包",
+    "description": "Cubi服务器测试资源包",
     "pack_format": 55,
     "supported_formats": [34, 75],
     "min_format": 34,

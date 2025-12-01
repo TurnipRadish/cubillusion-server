@@ -1,7 +1,9 @@
 {
-  "pack": {
-    "description": "A simple pack for testing purposes test1",
-    "min_format": [0, 9999],
-    "max_format": [0, 9999]
+  "pack":{
+    "description": "Cubi服务器测试数据包",
+    "pack_format": 71,
+    "supported_formats": [48, 94],
+    "min_format": 48,
+    "max_format": [94, 0]
   }
 }
