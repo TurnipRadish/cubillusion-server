@@ -34,12 +34,12 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          set -x
+          echo "🚀 开始同步数据包文件..."
+
           if screen -list | grep -q "mc"; then
             screen -S mc -X stuff "say 正在同步数据包文件...^M"
           fi
-
-          set -x
-          echo "🚀 开始设置符号链接..."
           
           # 确保目录存在和权限正确
           sudo mkdir -p /home/admin/mc-git-repo
