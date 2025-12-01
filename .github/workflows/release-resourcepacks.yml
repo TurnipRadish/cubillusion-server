@@ -158,34 +158,19 @@ jobs:
     #     source: "${{ steps.create_archive.outputs.archive_name }}"
     #     target: "/home/admin/minecraft-server/resourcepacks/"
     
-    - name: Upload to external CDN and update URL
+    - name: Update server.properties with jsDelivr URL
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # 方案1：使用GitHub Raw（如果网络可达）
-          RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/${{ steps.create_archive.outputs.archive_name }}"
-          
-          # 方案2：使用jsDelivr CDN（推荐）
-          JSDELIVR_URL="https://cdn.jsdelivr.net/gh/${{ github.repository }}/${{ steps.create_archive.outputs.archive_name }}"
-          
-          # 方案3：使用GitHub Pages（需要先部署）
-          PAGES_URL="https://${{ github.repository_owner }}.github.io/${{ github.repository_name }}/${{ steps.create_archive.outputs.archive_name }}"
-          
-          # 测试哪个链接可用
-          if curl --output /dev/null --silent --head --fail "$JSDELIVR_URL"; then
-            FINAL_URL="$JSDELIVR_URL"
-          elif curl --output /dev/null --silent --head --fail "$RAW_URL"; then
-            FINAL_URL="$RAW_URL"
-          else
-            FINAL_URL="https://github.com/${{ github.repository }}/releases/latest/download/${{ steps.create_archive.outputs.archive_name }}"
-          fi
+          # 使用jsDelivr CDN链接替换localhost:8080
+          JSDELIVR_URL="https://cdn.jsdelivr.net/gh/${{ github.repository }}@main/${{ steps.create_archive.outputs.archive_name }}"
           
           cd /home/admin/minecraft-server
-          sed -i "s|^resource-pack=.*|resource-pack=$FINAL_URL|" server.properties
-          echo "✅ 使用URL: $FINAL_URL"
+          sed -i "s|^resource-pack=.*|resource-pack=$JSDELIVR_URL|" server.properties
+          echo "✅ 已更新为jsDelivr CDN链接"
     # - name: Update server.properties with resourcepack URL
     #   uses: appleboy/ssh-action@v1.0.3
     #   with:
