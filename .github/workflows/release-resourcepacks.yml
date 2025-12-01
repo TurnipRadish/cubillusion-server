@@ -71,16 +71,11 @@ jobs:
         
         # 检查合并结果
         if [ -n "$(ls -A temp_combine/ 2>/dev/null)" ]; then
-          ARCHIVE_NAME="merged-resourcepack-${{ steps.version.outputs.timestamp }}.zip"
+          ARCHIVE_NAME="cubi-merged-resourcepack.zip"
           cd temp_combine
-          
-          # 显示合并后的文件结构
-          echo "📁 合并后的文件结构:"
-          find . -type f | head -20
-          
-          # 创建压缩包
           zip -r "../$ARCHIVE_NAME" .
           cd ..
+          
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
           echo "✅ 平铺合并完成: $ARCHIVE_NAME"
           
@@ -158,47 +153,29 @@ jobs:
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
 
-    - name: Upload ZIP to server
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "${{ steps.create_archive.outputs.archive_name }}"
-        target: "/home/admin/minecraft-server/resourcepacks/"
-    
-    - name: Start HTTP server and update config
+    - name: Upload and update server config
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /home/admin/minecraft-server
+          cd /home/admin/minecraft-server/resourcepacks/
           
-          # 更安全的方式停止旧HTTP服务器（只杀特定进程）
-          pkill -f "python3 -m http.server 8000" || true
-          sleep 1
+          # 上传并覆盖固定名称文件
+          echo "📤 上传资源包到服务器..."
           
-          # 启动Python HTTP服务器
-          nohup python3 -m http.server 8000 --directory resourcepacks > http-server.log 2>&1 &
-          sleep 2
-          
-          # 检查服务器是否启动成功
-          if pgrep -f "python3 -m http.server 8000" > /dev/null; then
-            echo "✅ HTTP服务器启动成功"
-          else
-            echo "❌ HTTP服务器启动失败"
-            cat http-server.log || true
-          fi
-          
-          # 获取服务器公网IP
+          # 更新服务器配置文件中的资源包URL
           SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-          echo "服务器IP: $SERVER_IP"
+          RESOURCE_PACK_URL="http://$SERVER_IP/download/cubi-merged-resourcepack.zip"
           
-          # 更新服务器配置
-          sed -i "s|^resource-pack=.*|resource-pack=http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}|" server.properties
-          echo "✅ 资源包URL: http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}"
+          # 更新server.properties
+          sed -i "s|^resource-pack=.*|resource-pack=$RESOURCE_PACK_URL|" /home/admin/minecraft-server/server.properties
           
-          # 显示当前配置
-          grep "^resource-pack=" server.properties
+          echo "✅ 资源包URL已更新: $RESOURCE_PACK_URL"
+          echo "📋 当前配置:"
+          grep "^resource-pack=" /home/admin/minecraft-server/server.properties
+          
+          # 重启Minecraft服务器使配置生效（根据需要取消注释）
+          # cd /home/admin/minecraft-server
+          # ./restart.sh
