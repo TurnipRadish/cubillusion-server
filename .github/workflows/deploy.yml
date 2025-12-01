@@ -60,3 +60,32 @@ jobs:
           echo "符号链接状态:"
           ls -la /home/admin/minecraft-server/world/datapacks
           ls -la /home/admin/minecraft-server/resourcepacks
+
+          # 检测并重启Minecraft服务器
+          echo "🔄 检查Minecraft服务器状态..."
+          if screen -list | grep -q "mc"; then
+            echo "🎮 检测到mc服务器正在运行，执行重启..."
+            # 安全停止服务器
+            screen -S mc -X stuff "stop^M"
+            echo "⏳ 等待服务器停止..."
+            sleep 10
+            # 确保进程完全停止
+            pkill -f "server.jar" || true
+            sleep 5
+          fi
+          
+          # 启动服务器
+          echo "🚀 启动Minecraft服务器..."
+          cd /home/admin/minecraft-server
+          ./start.sh
+          sleep 5
+          
+          # 验证启动状态
+          if screen -list | grep -q "mc"; then
+            echo "✅ Minecraft服务器重启成功"
+          else
+            echo "❌ Minecraft服务器启动失败"
+            exit 1
+          fi
+          
+          echo "🎉 部署流程全部完成！"
