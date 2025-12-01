@@ -40,15 +40,15 @@ jobs:
           sudo chmod 755 /home/admin/mc-git-repo
           
           # 备份服务器数据包和资源包
-          if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
-            mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
-            echo "✅ 原datapacks已备份"
-          fi
+          # if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
+          #   mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
+          #   echo "✅ 原datapacks已备份"
+          # fi
           
-          if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
-            mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
-            echo "✅ 原resourcepacks已备份"
-          fi
+          # if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
+          #   mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
+          #   echo "✅ 原resourcepacks已备份"
+          # fi
 
           # 创建新目录
           mkdir -p "/home/admin/minecraft-server/world/datapacks"
