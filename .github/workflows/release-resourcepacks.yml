@@ -46,7 +46,7 @@ jobs:
           | **版本** | v1.0.${{ github.run_number }} |
           | **提交哈希** | `${{ steps.version.outputs.short_sha }}` |
           | **触发者** | @${{ github.actor }} |
-          | **发布时间** | ${{ utc() }} |
+          | **发布时间** | ${{ github.event.head_commit.timestamp }} |
           
           ### 变更内容
           **提交信息:**  
