@@ -60,5 +60,11 @@ jobs:
           echo "符号链接状态:"
           ls -la /home/admin/minecraft-server/world/datapacks
           ls -la /home/admin/minecraft-server/resourcepacks
+
+          # 重启服务器
+          sleep 5
+          cd /home/admin/minecraft-server
+          bash ./start.sh
+          sleep 5
           
           echo "🎉 部署流程全部完成！"
