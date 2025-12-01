@@ -8,8 +8,8 @@ on:
       - '.github/workflows/release-resourcepacks.yml'
 
 permissions:
-  contents: write  # 添加这个权限块
-  
+  contents: write  # 关键：添加写入权限
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -23,15 +23,61 @@ jobs:
     - name: Get version info
       id: version
       run: |
-        # 获取版本信息和变更详情
         TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
         SHORT_SHA="${GITHUB_SHA:0:7}"
         echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
         echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
         
-        # 获取变更的文件列表
-        echo "变更的资源包文件:"
-        git diff --name-only HEAD~1 HEAD -- resourcepacks/ || echo "无法获取变更文件"
+        # 统计资源包信息
+        if [ -d "resourcepacks" ]; then
+          PACK_COUNT=$(find resourcepacks -maxdepth 1 -type d | tail -n +2 | wc -l)
+          PACK_NAMES=$(find resourcepacks -maxdepth 1 -type d | tail -n +2 | xargs -I {} basename {} | tr '\n' ',' | sed 's/,$//')
+          echo "pack_count=$PACK_COUNT" >> $GITHUB_OUTPUT
+          echo "pack_names=$PACK_NAMES" >> $GITHUB_OUTPUT
+          echo "发现 $PACK_COUNT 个资源包: $PACK_NAMES"
+        else
+          echo "pack_count=0" >> $GITHUB_OUTPUT
+          echo "pack_names=" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create combined resourcepack archive
+      id: create_archive
+      run: |
+        # 创建临时目录
+        mkdir -p temp_combine
+        
+        # 检查resourcepacks目录是否存在且有内容
+        if [ ! -d "resourcepacks" ] || [ -z "$(ls -A resourcepacks/)" ]; then
+          echo "❌ resourcepacks目录为空或不存在"
+          exit 1
+        fi
+        
+        # 复制所有资源包文件夹到临时目录
+        echo "📦 正在合并资源包..."
+        for dir in resourcepacks/*/; do
+          if [ -d "$dir" ]; then
+            dirname=$(basename "$dir")
+            echo "正在处理: $dirname"
+            cp -r "$dir" "temp_combine/$dirname"
+          fi
+        done
+        
+        # 创建压缩包
+        if [ -n "$(ls -A temp_combine/)" ]; then
+          ARCHIVE_NAME="combined-resourcepacks-${{ steps.version.outputs.timestamp }}.zip"
+          cd temp_combine
+          zip -r "../$ARCHIVE_NAME" .
+          cd ..
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+          echo "✅ 合并完成: $ARCHIVE_NAME"
+          
+          # 显示压缩包内容
+          echo "📁 压缩包内容:"
+          unzip -l "$ARCHIVE_NAME" | head -20
+        else
+          echo "❌ 没有找到可合并的资源包"
+          exit 1
+        fi
     
     - name: Create Resource Pack Release
       uses: softprops/action-gh-release@v1
@@ -39,36 +85,38 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}
-        name: "资源包更新 v1.0.${{ github.run_number }}"
+        name: "合并资源包 v1.0.${{ github.run_number }}"
         body: |
-          ## 🎨 资源包自动更新发布
+          ## 🎨 资源包合并发布
           
           ### 发布信息
           | 项目 | 详情 |
           |------|------|
           | **版本** | v1.0.${{ github.run_number }} |
+          | **包含资源包** | ${{ steps.version.outputs.pack_count }} 个 |
+          | **资源包列表** | ${{ steps.version.outputs.pack_names }} |
           | **提交哈希** | `${{ steps.version.outputs.short_sha }}` |
           | **触发者** | @${{ github.actor }} |
           | **发布时间** | ${{ github.event.head_commit.timestamp }} |
+          
+          ### 压缩包信息
+          - **文件名**: `${{ steps.create_archive.outputs.archive_name }}`
+          - **包含目录**: 所有resourcepacks下的子文件夹
+          - **格式**: ZIP压缩包
+          
+          ### 使用说明
+          1. 下载 `${{ steps.create_archive.outputs.archive_name }}`
+          2. 解压到Minecraft的resourcepacks目录
+          3. 在游戏中选择需要的资源包
           
           ### 变更内容
           **提交信息:**  
           ${{ github.event.head_commit.message }}
           
-          **相关文件变更:**
-          ```bash
-          git diff --name-only HEAD~1 HEAD -- resourcepacks/
-          ```
-          
-          ### 下载说明
-          - 📦 资源包文件位于 `resourcepacks/` 目录
-          - 🔄 自动部署到Minecraft服务器
-          - 📋 [查看工作流运行详情](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          
           ---
-          *本Release由GitHub Actions自动生成*
+          *🤖 自动合并生成 - [查看工作流](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
         draft: false
         prerelease: false
-        generate_release_notes: true
         files: |
-          resourcepacks/**
+          ${{ steps.create_archive.outputs.archive_name }}
+          # 移除了不存在的README.md和LICENSE文件
