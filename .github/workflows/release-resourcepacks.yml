@@ -96,6 +96,18 @@ jobs:
         
         # 清理临时目录
         rm -rf temp_combine
+
+    - name: Copy archive to repository root and commit
+      run: |
+        # 将压缩包复制到仓库根目录
+        cp "${{ steps.create_archive.outputs.archive_name }}" ./
+        
+        # 提交到main分支
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add "${{ steps.create_archive.outputs.archive_name }}"
+        git commit -m "feat: add merged resourcepack for CDN - ${{ steps.version.outputs.timestamp }}"
+        git push
     
     - name: Create Resource Pack Release
       uses: softprops/action-gh-release@v1
