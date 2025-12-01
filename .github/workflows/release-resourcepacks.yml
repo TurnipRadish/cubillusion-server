@@ -157,28 +157,40 @@ jobs:
     #     files: |
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
-    
-    - name: Upload ZIP to Gitee via Git
-      id: gitee_upload  # 添加这行
-      run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-    
-        # 使用 GITEE_TOKEN 直接克隆（用户名用任意字符，如 x-access-token）
-        REPO_URL="https://x-access-token:${{ secrets.GITEE_TOKEN }}@gitee.com/turnipradish/cubillusion-server"
-        git clone "$REPO_URL" gitee-repo
-    
-        cp "${{ steps.create_archive.outputs.archive_name }}" gitee-repo/resourcepacks/
-    
-        cd gitee-repo
-        git add .
-        git commit -m "feat: update resource pack ${{ steps.version.outputs.timestamp }}"
-        git push "$REPO_URL" main
-    
-        # 生成可下载的 raw 链接
-        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/raw/main/${{ steps.create_archive.outputs.archive_name }}"
-        echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
+    - name: Upload to Gitee Release
+      id: gitee_release
+      env:
+        GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+      run: |
+        TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
+        ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
+    
+        # 创建 Release（确保 body 不为空，转义正确）
+        response=$(curl -s -X POST \
+          -H "Authorization: token $GITEE_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"auto\",\"target_commitish\":\"main\"}" \
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
+    
+        # 直接用 grep 提取数字（更稳定）
+        RELEASE_ID=$(echo "$response" | sed -n 's/.*"id":\ *\([0-9]*\).*/\1/p' | head -1)
+        if [ -z "$RELEASE_ID" ]; then
+          echo "❌ 创建失败: $response"
+          exit 1
+        fi
+        echo "✅ Release ID: $RELEASE_ID"
+    
+        # 修改上传URL格式（关键修改）
+        curl -X POST \
+          -H "Authorization: token $GITEE_TOKEN" \
+          -F "file=@$ARCHIVE" \
+          -F "access_token=$GITEE_TOKEN" \
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
+        
+        # 生成直链
+        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
+        echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
 
     - name: Update Server Properties
@@ -189,7 +201,5 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /home/admin/minecraft-server
-          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_upload.outputs.gitee_download_url }}|" server.properties
+          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
           echo "✅ 已更新资源包链接"
-
-    
