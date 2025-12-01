@@ -156,7 +156,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}/${{ steps.create_archive.outputs.archive_name }}"
+          RELEASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/resourcepacks/merged-resourcepack-${{ steps.version.outputs.timestamp }}.zip"
           cd /home/admin/minecraft-server
           sed -i "s|^resource-pack=.*|resource-pack=$RELEASE_URL|" server.properties
           echo "✅ 已更新server.properties中的资源包链接"
