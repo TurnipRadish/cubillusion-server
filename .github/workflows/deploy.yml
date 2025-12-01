@@ -34,44 +34,44 @@ jobs:
           set -x
           echo "🚀 开始设置符号链接..."
           
-          # # 确保目录存在和权限正确
-          # sudo mkdir -p /home/admin/mc-git-repo
-          # sudo chown admin:admin /home/admin/mc-git-repo
-          # sudo chmod 755 /home/admin/mc-git-repo
+          # 确保目录存在和权限正确
+          sudo mkdir -p /home/admin/mc-git-repo
+          sudo chown admin:admin /home/admin/mc-git-repo
+          sudo chmod 755 /home/admin/mc-git-repo
           
-          # # 备份服务器数据包和资源包
-          # # if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
-          # #   mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
-          # #   echo "✅ 原datapacks已备份"
-          # # fi
+          # 备份服务器数据包和资源包
+          # if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
+          #   mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
+          #   echo "✅ 原datapacks已备份"
+          # fi
           
-          # # if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
-          # #   mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
-          # #   echo "✅ 原resourcepacks已备份"
-          # # fi
+          # if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
+          #   mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
+          #   echo "✅ 原resourcepacks已备份"
+          # fi
 
-          # # 创建新目录
-          # mkdir -p "/home/admin/minecraft-server/world/datapacks"
-          # mkdir -p "/home/admin/minecraft-server/resourcepacks"
+          # 创建新目录
+          mkdir -p "/home/admin/minecraft-server/world/datapacks"
+          mkdir -p "/home/admin/minecraft-server/resourcepacks"
           
-          # # 从Git仓库复制文件到Minecraft服务器目录
-          # echo "📁 同步数据包..."
-          # if [ -d "/home/admin/mc-git-repo/datapacks" ]; then
-          #   cp -r "/home/admin/mc-git-repo/datapacks/"* "/home/admin/minecraft-server/world/datapacks/" 2>/dev/null || true
-          # fi
+          # 从Git仓库复制文件到Minecraft服务器目录
+          echo "📁 同步数据包..."
+          if [ -d "/home/admin/mc-git-repo/datapacks" ]; then
+            cp -r "/home/admin/mc-git-repo/datapacks/"* "/home/admin/minecraft-server/world/datapacks/" 2>/dev/null || true
+          fi
           
-          # echo "📁 同步资源包..."
-          # if [ -d "/home/admin/mc-git-repo/resourcepacks" ]; then
-          #   cp -r "/home/admin/mc-git-repo/resourcepacks/"* "/home/admin/minecraft-server/resourcepacks/" 2>/dev/null || true
-          # fi
+          echo "📁 同步资源包..."
+          if [ -d "/home/admin/mc-git-repo/resourcepacks" ]; then
+            cp -r "/home/admin/mc-git-repo/resourcepacks/"* "/home/admin/minecraft-server/resourcepacks/" 2>/dev/null || true
+          fi
           
-          # # 设置正确权限
-          # chown -R admin:admin "/home/admin/minecraft-server/world/datapacks"
-          # chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
-          # chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
-          # chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
+          # 设置正确权限
+          chown -R admin:admin "/home/admin/minecraft-server/world/datapacks"
+          chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
+          chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
+          chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
           
-          # echo "✅ 文件同步完成"
+          echo "✅ 文件同步完成"
 
           # 重启服务器
           sleep 5
