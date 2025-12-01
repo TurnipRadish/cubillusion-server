@@ -159,6 +159,7 @@ jobs:
     #       # 移除了不存在的README.md和LICENSE文件
     
     - name: Upload ZIP to Gitee via Git
+      id: gitee_upload  # 添加这行
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
@@ -188,7 +189,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /home/admin/minecraft-server
-          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
+          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_upload.outputs.gitee_download_url }}|" server.properties
           echo "✅ 已更新资源包链接"
 
     
