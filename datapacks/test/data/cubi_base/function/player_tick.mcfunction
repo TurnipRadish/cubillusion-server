@@ -6,3 +6,6 @@ execute unless score @s cubi_uid matches -2147483648..2147483647 run function cu
 # 保持参观玩家的游戏模式为冒险模式，同时保持虚弱效果
 gamemode adventure @s[team=cubi_player_sp]
 effect give @s[team=cubi_player_sp] weakness infinite 100 true
+
+# 清除进度以重复触发（放在最后）
+advancement revoke @s only cubi_base:player_tick
