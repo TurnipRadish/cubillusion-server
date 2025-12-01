@@ -158,38 +158,25 @@ jobs:
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
 
-    - name: Upload to Gitee Release
-      id: gitee_release
-      env:
-        GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+    - name: Upload ZIP to Gitee via Git
       run: |
-        TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
-        ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
     
-        # 创建 Release（确保 body 不为空，转义正确）
-        response=$(curl -s -X POST \
-          -H "Authorization: token $GITEE_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"auto\",\"target_commitish\":\"main\"}" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
+        # 克隆 Gitee 仓库
+        git clone https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/turnipradish/cubillusion-server.git gitee-repo
     
-        # 直接用 grep 提取数字（更稳定）
-        RELEASE_ID=$(echo "$response" | sed -n 's/.*"id":\ *\([0-9]*\).*/\1/p' | head -1)
-        if [ -z "$RELEASE_ID" ]; then
-          echo "❌ 创建失败: $response"
-          exit 1
-        fi
-        echo "✅ Release ID: $RELEASE_ID"
+        # 复制资源包到目标目录
+        cp "${{ steps.create_archive.outputs.archive_name }}" gitee-repo/resourcepacks/
     
-        # 上传文件
-        curl -s -X POST \
-          -H "Authorization: token $GITEE_TOKEN" \
-          -F "file=@$ARCHIVE" \
-          -F "name=$ARCHIVE" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files" || true
+        # 提交并推送
+        cd gitee-repo
+        git add .
+        git commit -m "feat: update resource pack ${{ steps.version.outputs.timestamp }}"
+        git push origin main
     
-        # 生成直链
-        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
+        # 生成 raw 文件直链（Minecraft 可用）
+        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/raw/main/${{ steps.create_archive.outputs.archive_name }}"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
 
