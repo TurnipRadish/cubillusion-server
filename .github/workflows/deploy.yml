@@ -28,6 +28,7 @@ jobs:
 
           if screen -list | grep -q "mc"; then
             screen -S mc -X stuff "say 正在同步数据包文件...^M"
+            screen -S mc -X stuff "function cubi_base:_set_server_reload_flag^M"
           fi
       
     - name: Upload files via SCP
@@ -90,6 +91,7 @@ jobs:
 
           if screen -list | grep -q "mc"; then
             screen -S mc -X stuff "say 已同步数据包文件^M"
+            screen -S mc -X stuff "function cubi_base:_reset_server_flag^M"
           fi
           
           echo "✅ 文件同步完成"          
