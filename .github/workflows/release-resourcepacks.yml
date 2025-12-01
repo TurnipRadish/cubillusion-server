@@ -165,27 +165,33 @@ jobs:
       run: |
         TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
         ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
-
-        # 创建 Release
+    
+        # 创建 Release（补全必填字段）
         response=$(curl -s -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\"}" \
+          -d '{
+            "tag_name": "'"$TAG_NAME"'",
+            "name": "'"$TAG_NAME"'",
+            "body": "Auto release",
+            "target_commitish": "main"
+          }' \
           "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
-
+    
         RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
         [ -z "$RELEASE_ID" ] && { echo "❌ 创建失败: $response"; exit 1; }
-
+    
         # 上传文件
         curl -s -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
           -F "file=@$ARCHIVE" \
           -F "name=$ARCHIVE" \
           "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
-
-        # 输出 Minecraft 可用的直链
+    
+        # 输出直链
         DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
 
     - name: Update Server Properties
       uses: appleboy/ssh-action@v1.0.3
