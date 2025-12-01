@@ -3,8 +3,6 @@ name: Deploy to Minecraft Server
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 jobs:
   deploy:
@@ -12,71 +10,82 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
-    - name: Deploy files via SSH
+    - name: Upload files via SCP
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "."
+        target: "/home/admin/mc-git-repo"
+        strip_components: 0
+        rm: false
+      
+    - name: Setup symlinks and backup
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          echo "🚀 开始部署到Minecraft服务器..."
+          set -x
+          echo "🚀 开始设置符号链接..."
           
-          # 创建或清空Git仓库目录
-          mkdir -p /home/admin/mc-git-repo
-          cd /home/admin/mc-git-repo
+          # 确保目录存在和权限正确
+          sudo mkdir -p /home/admin/mc-git-repo
+          sudo chown admin:admin /home/admin/mc-git-repo
+          sudo chmod 755 /home/admin/mc-git-repo
           
-          # 同步GitHub文件到中间目录（排除.git等文件）
-          echo "📁 同步文件到Git仓库目录..."
-          rsync -av --delete \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.gitignore' \
-            $GITHUB_WORKSPACE/ /home/admin/mc-git-repo/
-          
-          # 确保Minecraft服务器目录存在
-          mkdir -p /home/admin/minecraft-server/world/datapacks
-          mkdir -p /home/admin/minecraft-server/resourcepacks
-          
-          # 创建符号链接（如果不存在则创建）
-          echo "🔗 创建符号链接..."
-          if [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
-            # 备份原目录（如果存在）
-            if [ -d "/home/admin/minecraft-server/world/datapacks" ]; then
-              mv /home/admin/minecraft-server/world/datapacks /home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)
-            fi
-            # 创建符号链接
-            ln -sf /home/admin/mc-git-repo/datapacks /home/admin/minecraft-server/world/datapacks
+          # 备份服务器数据包和资源包
+          if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
+            mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
+            echo "✅ 原datapacks已备份"
           fi
           
-          if [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
-            if [ -d "/home/admin/minecraft-server/resourcepacks" ]; then
-              mv /home/admin/minecraft-server/resourcepacks /home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)
-            fi
-            ln -sf /home/admin/mc-git-repo/resourcepacks /home/admin/minecraft-server/resourcepacks
+          if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
+            mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
+            echo "✅ 原resourcepacks已备份"
           fi
+
+          # 自动创建符号链接（文件已上传，可以安全创建）
+          ln -sf /home/admin/mc-git-repo/datapacks /home/admin/minecraft-server/world/datapacks
+          ln -sf /home/admin/mc-git-repo/resourcepacks /home/admin/minecraft-server/resourcepacks
           
-          # 设置正确的文件权限
-          echo "🔒 设置文件权限..."
-          # sudo chown -R player1:player1 /home/admin/minecraft-server/
-          sudo chown -R admin:admin /home/admin/mc-git-repo/
-          sudo chmod -R 755 /home/admin/mc-git-repo/
-          
-          echo "✅ 文件同步和符号链接创建完成"
-          
-          # 使用你的start.sh脚本重启服务器
-          echo "🔄 重启Minecraft服务器..."
-          cd /home/admin/minecraft-server
-          
-          # 停止当前服务器（如果运行中）
+          echo "✅ 符号链接创建完成"
+          echo "当前文件结构:"
+          ls -la /home/admin/mc-git-repo/
+          echo "符号链接状态:"
+          ls -la /home/admin/minecraft-server/world/datapacks
+          ls -la /home/admin/minecraft-server/resourcepacks
+
+          # 检测并重启Minecraft服务器
+          echo "🔄 检查Minecraft服务器状态..."
           if screen -list | grep -q "mc"; then
+            echo "🎮 检测到mc服务器正在运行，执行重启..."
+            # 安全停止服务器
             screen -S mc -X stuff "stop^M"
-            echo "⏳ 等待服务器安全关闭..."
+            echo "⏳ 等待服务器停止..."
             sleep 10
+            # 确保进程完全停止
+            pkill -f "server.jar" || true
+            sleep 5
           fi
           
-          # 使用你的start.sh脚本启动服务器
+          # 启动服务器
+          echo "🚀 启动Minecraft服务器..."
+          cd /home/admin/minecraft-server
           ./start.sh
+          sleep 5
           
-          echo "🎮 Minecraft服务器重启完成"
-          echo "🎉 部署完成！"
+          # 验证启动状态
+          if screen -list | grep -q "mc"; then
+            echo "✅ Minecraft服务器重启成功"
+          else
+            echo "❌ Minecraft服务器启动失败"
+            exit 1
+          fi
+          
+          echo "🎉 部署流程全部完成！"
