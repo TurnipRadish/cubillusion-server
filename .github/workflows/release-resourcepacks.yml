@@ -175,16 +175,15 @@ jobs:
         
         RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
         
-        # 使用multipart/form-data格式上传（关键修改）
+        # 使用简单的文件上传（去掉type参数）
         curl -X POST \
           -H "Authorization: token $GITEE_TOKEN" \
-          -F "file=@$ARCHIVE;type=application/zip" \
-          -F "name=$ARCHIVE" \
+          -F "file=@$ARCHIVE" \
           "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
         
         DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
-
+        
     - name: Update Server Properties
       uses: appleboy/ssh-action@v1.0.3
       with:
