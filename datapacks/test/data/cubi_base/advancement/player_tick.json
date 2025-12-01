@@ -1,0 +1,10 @@
+{
+  "criteria": {
+    "cubi_player_tick": {
+      "trigger": "tick"
+    }
+  },
+  "rewards": {
+    "function": "cubi_base:player_tick"
+  }
+}
