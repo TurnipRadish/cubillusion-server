@@ -26,14 +26,6 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # 停止screen中的服务器
-          screen -S mc -X quit || echo "没有运行的Minecraft服务器"
-          sleep 10
-
-          # 确保进程完全停止
-          pkill -f "server.jar" || echo "进程已停止"
-          sleep 3
-
           # 重启服务器
           cd /home/admin/minecraft-server
           bash ./start.sh
