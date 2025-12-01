@@ -149,32 +149,43 @@ jobs:
           ${{ steps.create_archive.outputs.archive_name }}
           # 移除了不存在的README.md和LICENSE文件
 
-    - name: Upload resourcepack to Minecraft server directly
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "${{ steps.create_archive.outputs.archive_name }}"
-        target: "/home/admin/minecraft-server/resourcepacks/"
+    # - name: Upload resourcepack to Minecraft server directly
+    #   uses: appleboy/scp-action@v0.1.7
+    #   with:
+    #     host: ${{ secrets.SERVER_HOST }}
+    #     username: ${{ secrets.SERVER_USER }}
+    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+    #     source: "${{ steps.create_archive.outputs.archive_name }}"
+    #     target: "/home/admin/minecraft-server/resourcepacks/"
     
-    - name: Start local HTTP server for resourcepack
+    - name: Upload to external CDN and update URL
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          # 方案1：使用GitHub Raw（如果网络可达）
+          RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/${{ steps.create_archive.outputs.archive_name }}"
+          
+          # 方案2：使用jsDelivr CDN（推荐）
+          JSDELIVR_URL="https://cdn.jsdelivr.net/gh/${{ github.repository }}/${{ steps.create_archive.outputs.archive_name }}"
+          
+          # 方案3：使用GitHub Pages（需要先部署）
+          PAGES_URL="https://${{ github.repository_owner }}.github.io/${{ github.repository_name }}/${{ steps.create_archive.outputs.archive_name }}"
+          
+          # 测试哪个链接可用
+          if curl --output /dev/null --silent --head --fail "$JSDELIVR_URL"; then
+            FINAL_URL="$JSDELIVR_URL"
+          elif curl --output /dev/null --silent --head --fail "$RAW_URL"; then
+            FINAL_URL="$RAW_URL"
+          else
+            FINAL_URL="https://github.com/${{ github.repository }}/releases/latest/download/${{ steps.create_archive.outputs.archive_name }}"
+          fi
+          
           cd /home/admin/minecraft-server
-          # 上传资源包到服务器
-          cp "${{ steps.create_archive.outputs.archive_name }}" resourcepacks/
-          
-          # 使用Python启动简单的HTTP服务器（端口8080）
-          nohup python3 -m http.server 8080 --directory resourcepacks/ > http-server.log 2>&1 &
-          
-          # 更新为本地服务器链接
-          sed -i "s|^resource-pack=.*|resource-pack=http://localhost:8080/${{ steps.create_archive.outputs.archive_name }}|" server.properties
-
+          sed -i "s|^resource-pack=.*|resource-pack=$FINAL_URL|" server.properties
+          echo "✅ 使用URL: $FINAL_URL"
     # - name: Update server.properties with resourcepack URL
     #   uses: appleboy/ssh-action@v1.0.3
     #   with:
