@@ -148,3 +148,15 @@ jobs:
         files: |
           ${{ steps.create_archive.outputs.archive_name }}
           # 移除了不存在的README.md和LICENSE文件
+
+    - name: Update server.properties with resourcepack URL
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}/${{ steps.create_archive.outputs.archive_name }}"
+          cd /home/admin/minecraft-server
+          sed -i "s|^resource-pack=.*|resource-pack=$RELEASE_URL|" server.properties
+          echo "✅ 已更新server.properties中的资源包链接"
