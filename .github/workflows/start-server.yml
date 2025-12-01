@@ -8,6 +8,7 @@ on:
       - '!datapacks/*/data/*/function/**'  
       - '!datapacks/*/data/*/advancement/**'  
       - '!datapacks/*/data/*/loot_table/**'  
+      - '!datapacks/*/data/*/tags/**' 
       - '.github/workflows/start-server.yml'
 
 jobs:
