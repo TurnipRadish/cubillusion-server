@@ -1,7 +1,9 @@
 {
-  "pack": {
-    "description": "A simple pack for testing purposes",
-    "min_format": [0, 9999],
-    "max_format": [0, 9999]
+  "pack":{
+    "description": "示例资源包",
+    "pack_format": 55,
+    "supported_formats": [34, 75],
+    "min_format": 34,
+    "max_format": [75, 0]
   }
 }
