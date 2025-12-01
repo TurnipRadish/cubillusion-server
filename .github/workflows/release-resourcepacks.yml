@@ -97,97 +97,108 @@ jobs:
         # 清理临时目录
         rm -rf temp_combine
 
-    - name: Copy archive to repository root and commit
+    # - name: Copy archive to repository root and commit
+    #   run: |
+    #     # 提交到main分支
+    #     git config --global user.name "GitHub Actions"
+    #     git config --global user.email "actions@github.com"
+    #     git add "${{ steps.create_archive.outputs.archive_name }}"
+    #     git commit -m "feat: add merged resourcepack for CDN - ${{ steps.version.outputs.timestamp }}"
+    #     git push
+    
+    # - name: Create Resource Pack Release
+    #   uses: softprops/action-gh-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}
+    #     name: "合并资源包 v1.0.${{ github.run_number }}"
+    #     body: |
+    #       ## 🎨 资源包平铺合并发布
+          
+    #       ### 合并方式
+    #       - **平铺合并**: 所有资源包的文件直接合并到同一目录
+    #       - **冲突处理**: 同名文件按处理顺序覆盖（后处理的覆盖先处理的）
+    #       - **文件冲突数**: ${{ steps.create_archive.outputs.conflict_count || 0 }} 个
+          
+    #       ### 使用说明
+    #       1. 下载合并包并解压到Minecraft的resourcepacks目录
+    #       2. 在游戏中启用此资源包即可获得所有资源包的效果
+    #       3. 同名文件已自动处理，无需手动操作
+          
+    #       ### 发布信息
+    #       | 项目 | 详情 |
+    #       |------|------|
+    #       | **版本** | v1.0.${{ github.run_number }} |
+    #       | **包含资源包** | ${{ steps.version.outputs.pack_count }} 个 |
+    #       | **资源包列表** | ${{ steps.version.outputs.pack_names }} |
+    #       | **提交哈希** | `${{ steps.version.outputs.short_sha }}` |
+    #       | **触发者** | @${{ github.actor }} |
+    #       | **发布时间** | ${{ github.event.head_commit.timestamp }} |
+          
+    #       ### 压缩包信息
+    #       - **文件名**: `${{ steps.create_archive.outputs.archive_name }}`
+    #       - **包含目录**: 所有resourcepacks下的子文件夹
+    #       - **格式**: ZIP压缩包
+          
+    #       ### 使用说明
+    #       1. 下载 `${{ steps.create_archive.outputs.archive_name }}`
+    #       2. 解压到Minecraft的resourcepacks目录
+    #       3. 在游戏中选择需要的资源包
+          
+    #       ### 变更内容
+    #       **提交信息:**  
+    #       ${{ github.event.head_commit.message }}
+          
+    #       ---
+    #       *🤖 自动合并生成 - [查看工作流](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+    #     draft: false
+    #     prerelease: false
+    #     files: |
+    #       ${{ steps.create_archive.outputs.archive_name }}
+    #       # 移除了不存在的README.md和LICENSE文件
+    
+    - name: Upload to Gitee Mirror
+      env:
+        GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
       run: |
-        # 提交到main分支
+        # 配置Gitee认证
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git add "${{ steps.create_archive.outputs.archive_name }}"
-        git commit -m "feat: add merged resourcepack for CDN - ${{ steps.version.outputs.timestamp }}"
-        git push
-    
-    - name: Create Resource Pack Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: resourcepack-${{ steps.version.outputs.timestamp }}-${{ steps.version.outputs.short_sha }}
-        name: "合并资源包 v1.0.${{ github.run_number }}"
-        body: |
-          ## 🎨 资源包平铺合并发布
-          
-          ### 合并方式
-          - **平铺合并**: 所有资源包的文件直接合并到同一目录
-          - **冲突处理**: 同名文件按处理顺序覆盖（后处理的覆盖先处理的）
-          - **文件冲突数**: ${{ steps.create_archive.outputs.conflict_count || 0 }} 个
-          
-          ### 使用说明
-          1. 下载合并包并解压到Minecraft的resourcepacks目录
-          2. 在游戏中启用此资源包即可获得所有资源包的效果
-          3. 同名文件已自动处理，无需手动操作
-          
-          ### 发布信息
-          | 项目 | 详情 |
-          |------|------|
-          | **版本** | v1.0.${{ github.run_number }} |
-          | **包含资源包** | ${{ steps.version.outputs.pack_count }} 个 |
-          | **资源包列表** | ${{ steps.version.outputs.pack_names }} |
-          | **提交哈希** | `${{ steps.version.outputs.short_sha }}` |
-          | **触发者** | @${{ github.actor }} |
-          | **发布时间** | ${{ github.event.head_commit.timestamp }} |
-          
-          ### 压缩包信息
-          - **文件名**: `${{ steps.create_archive.outputs.archive_name }}`
-          - **包含目录**: 所有resourcepacks下的子文件夹
-          - **格式**: ZIP压缩包
-          
-          ### 使用说明
-          1. 下载 `${{ steps.create_archive.outputs.archive_name }}`
-          2. 解压到Minecraft的resourcepacks目录
-          3. 在游戏中选择需要的资源包
-          
-          ### 变更内容
-          **提交信息:**  
-          ${{ github.event.head_commit.message }}
-          
-          ---
-          *🤖 自动合并生成 - [查看工作流](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-        draft: false
-        prerelease: false
-        files: |
-          ${{ steps.create_archive.outputs.archive_name }}
-          # 移除了不存在的README.md和LICENSE文件
+        
+        # 添加Gitee远程仓库
+        git remote add gitee https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/你的用户名/你的仓库名.git
+        
+        # 推送资源包到Gitee
+        git push gitee main --force
+        
+        # 或者使用Gitee API创建Release（推荐）
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: token ${{ secrets.GITEE_TOKEN }}" \
+          -d '{
+            "tag_name": "resourcepack-${{ steps.version.outputs.timestamp }}",
+            "name": "资源包镜像 ${{ steps.version.outputs.timestamp }}",
+            "body": "自动同步的资源包镜像",
+            "assets": [
+              {
+                "name": "${{ steps.create_archive.outputs.archive_name }}",
+                "browser_download_url": "https://gitee.com/你的用户名/你的仓库名/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
+              }
+            ]
+          }' \
+          "https://gitee.com/api/v5/repos/你的用户名/你的仓库名/releases"
 
-    # - name: Upload resourcepack to Minecraft server directly
-    #   uses: appleboy/scp-action@v0.1.7
-    #   with:
-    #     host: ${{ secrets.SERVER_HOST }}
-    #     username: ${{ secrets.SERVER_USER }}
-    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-    #     source: "${{ steps.create_archive.outputs.archive_name }}"
-    #     target: "/home/admin/minecraft-server/resourcepacks/"
-    
-    - name: Update server.properties with jsDelivr URL
+    - name: Update Server with Gitee URL
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # 使用jsDelivr CDN链接替换localhost:8080
-          JSDELIVR_URL="https://cdn.jsdelivr.net/gh/${{ github.repository }}@main/${{ steps.create_archive.outputs.archive_name }}"
+          # 使用Gitee Release链接（国内访问更快）
+          GITEE_RELEASE_URL="https://gitee.com/你的用户名/你的仓库名/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
           
           cd /home/admin/minecraft-server
-          sed -i "s|^resource-pack=.*|resource-pack=$JSDELIVR_URL|" server.properties
-          echo "✅ 已更新为jsDelivr CDN链接"
-    # - name: Update server.properties with resourcepack URL
-    #   uses: appleboy/ssh-action@v1.0.3
-    #   with:
-    #     host: ${{ secrets.SERVER_HOST }}
-    #     username: ${{ secrets.SERVER_USER }}
-    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-    #     script: |
-    #       RELEASE_URL="https://github.com/${{ github.repository }}/releases/latest/download/${{ steps.create_archive.outputs.archive_name }}"
-    #       cd /home/admin/minecraft-server
-    #       sed -i "s|^resource-pack=.*|resource-pack=$RELEASE_URL|" server.properties
-    #       echo "✅ 已更新server.properties中的资源包链接"
+          sed -i "s|^resource-pack=.*|resource-pack=$GITEE_RELEASE_URL|" server.properties
+          echo "✅ 已配置Gitee镜像链接，国内访问优化完成"
