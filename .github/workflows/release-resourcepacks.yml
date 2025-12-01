@@ -199,5 +199,3 @@ jobs:
           sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
           # 可选：添加 SHA1 校验（推荐）
           echo "✅ 已更新 resource-pack 链接"
-          sudo systemctl restart minecraft-server  # 重启服务
-
