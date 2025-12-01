@@ -51,33 +51,51 @@ jobs:
           echo "❌ resourcepacks目录为空或不存在"
           exit 1
         fi
-        
-        # 复制所有资源包文件夹到临时目录
-        echo "📦 正在合并资源包..."
-        for dir in resourcepacks/*/; do
-          if [ -d "$dir" ]; then
-            dirname=$(basename "$dir")
-            echo "正在处理: $dirname"
-            cp -r "$dir" "temp_combine/$dirname"
+    
+        # 合并所有资源包文件到同一目录（平铺合并）
+        echo "📦 正在平铺合并资源包..."
+        for resourcepack in resourcepacks/*/; do
+          if [ -d "$resourcepack" ]; then
+            packname=$(basename "$resourcepack")
+            echo "正在合并: $packname"
+            
+            # 复制该资源包内的所有文件和文件夹到合并目录
+            # 使用rsync或cp来合并，同名文件会被覆盖
+            if command -v rsync >/dev/null 2>&1; then
+              rsync -a "$resourcepack"/* temp_combine/ 2>/dev/null || true
+            else
+              cp -r "$resourcepack"/* temp_combine/ 2>/dev/null || true
+            fi
           fi
         done
         
-        # 创建压缩包
-        if [ -n "$(ls -A temp_combine/)" ]; then
-          ARCHIVE_NAME="combined-resourcepacks-${{ steps.version.outputs.timestamp }}.zip"
+        # 检查合并结果
+        if [ -n "$(ls -A temp_combine/ 2>/dev/null)" ]; then
+          ARCHIVE_NAME="merged-resourcepack-${{ steps.version.outputs.timestamp }}.zip"
           cd temp_combine
+          
+          # 显示合并后的文件结构
+          echo "📁 合并后的文件结构:"
+          find . -type f | head -20
+          
+          # 创建压缩包
           zip -r "../$ARCHIVE_NAME" .
           cd ..
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-          echo "✅ 合并完成: $ARCHIVE_NAME"
+          echo "✅ 平铺合并完成: $ARCHIVE_NAME"
           
-          # 显示压缩包内容
-          echo "📁 压缩包内容:"
-          unzip -l "$ARCHIVE_NAME" | head -20
+          # 显示压缩包统计
+          echo "📊 合并统计:"
+          echo "总文件数: $(unzip -l "$ARCHIVE_NAME" | wc -l)"
+          echo "资源包数量: $(find resourcepacks -maxdepth 1 -type d | tail -n +2 | wc -l)"
+          
         else
-          echo "❌ 没有找到可合并的资源包"
+          echo "❌ 合并后目录为空"
           exit 1
         fi
+        
+        # 清理临时目录
+        rm -rf temp_combine
     
     - name: Create Resource Pack Release
       uses: softprops/action-gh-release@v1
