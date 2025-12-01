@@ -7,6 +7,9 @@ on:
       - 'resourcepacks/**'
       - '.github/workflows/release-resourcepacks.yml'
 
+permissions:
+  contents: write  # 添加这个权限块
+  
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -69,5 +72,3 @@ jobs:
         generate_release_notes: true
         files: |
           resourcepacks/**
-          README.md
-          LICENSE
