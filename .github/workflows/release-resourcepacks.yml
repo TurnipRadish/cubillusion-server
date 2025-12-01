@@ -183,11 +183,11 @@ jobs:
             "assets": [
               {
                 "name": "${{ steps.create_archive.outputs.archive_name }}",
-                "browser_download_url": "https://gitee.com/你的用户名/你的仓库名/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
+                "browser_download_url": "https://gitee.com/turnipradish/cubillusion-server/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
               }
             ]
           }' \
-          "https://gitee.com/api/v5/repos/你的用户名/你的仓库名/releases"
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases"
 
     - name: Update Server with Gitee URL
       uses: appleboy/ssh-action@v1.0.3
@@ -197,7 +197,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           # 使用Gitee Release链接（国内访问更快）
-          GITEE_RELEASE_URL="https://gitee.com/你的用户名/你的仓库名/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
+          GITEE_RELEASE_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/resourcepack-${{ steps.version.outputs.timestamp }}/${{ steps.create_archive.outputs.archive_name }}"
           
           cd /home/admin/minecraft-server
           sed -i "s|^resource-pack=.*|resource-pack=$GITEE_RELEASE_URL|" server.properties
