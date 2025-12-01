@@ -158,33 +158,16 @@ jobs:
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
 
-    - name: Upload to Gitee Release
-      id: gitee_release
-      env:
-        GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-      run: |
-        TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
-        ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
-        
-        # 创建Release
-        response=$(curl -s -X POST \
-          -H "Authorization: token $GITEE_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"资源包文件\"}" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
-        
-        RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
-        
-        # 使用简单的文件上传（去掉type参数）
-        curl -X POST \
-          -H "Authorization: token $GITEE_TOKEN" \
-          -F "file=@$ARCHIVE" \
-          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
-        
-        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
-        echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
-        
-    - name: Update Server Properties
+    - name: Upload ZIP to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "${{ steps.create_archive.outputs.archive_name }}"
+        target: "/home/admin/minecraft-server/resourcepacks/"
+    
+    - name: Start HTTP server and update config
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -192,5 +175,16 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /home/admin/minecraft-server
-          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
-          echo "✅ 已更新资源包链接"
+          
+          # 停止可能存在的旧HTTP服务器
+          pkill -f "python3 -m http.server" || true
+          
+          # 在后台启动Python HTTP服务器（端口8000）
+          nohup python3 -m http.server 8000 --directory resourcepacks > /dev/null 2>&1 &
+          
+          # 获取服务器公网IP（或使用域名）
+          SERVER_IP=$(curl -s ifconfig.me)
+          
+          # 更新服务器配置
+          sed -i "s|^resource-pack=.*|resource-pack=http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}|" server.properties
+          echo "✅ 资源包URL: http://$SERVER_IP:8000/${{ steps.create_archive.outputs.archive_name }}"
