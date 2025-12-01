@@ -157,27 +157,27 @@ jobs:
     #     files: |
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
-
+    
     - name: Upload ZIP to Gitee via Git
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
     
-        # 克隆 Gitee 仓库
-        git clone https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/turnipradish/cubillusion-server.git gitee-repo
+        # 使用 GITEE_TOKEN 直接克隆（用户名用任意字符，如 x-access-token）
+        REPO_URL="https://x-access-token:${{ secrets.GITEE_TOKEN }}@gitee.com/turnipradish/cubillusion-server.git"
+        git clone "$REPO_URL" gitee-repo
     
-        # 复制资源包到目标目录
         cp "${{ steps.create_archive.outputs.archive_name }}" gitee-repo/resourcepacks/
     
-        # 提交并推送
         cd gitee-repo
         git add .
         git commit -m "feat: update resource pack ${{ steps.version.outputs.timestamp }}"
-        git push origin main
+        git push "$REPO_URL" main
     
-        # 生成 raw 文件直链（Minecraft 可用）
+        # 生成可下载的 raw 链接
         DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/raw/main/${{ steps.create_archive.outputs.archive_name }}"
         echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
 
 
     - name: Update Server Properties
