@@ -1,82 +1,82 @@
-name: Deploy to Minecraft Server
+# name: Deploy to Minecraft Server
 
-on:
-  push:
-    branches: [ main, master ]
+# on:
+#   push:
+#     branches: [ main, master ]
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
+#       with:
+#         fetch-depth: 0
       
-    - name: Upload files via SCP
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "."
-        target: "/home/admin/mc-git-repo"
-        strip_components: 0
-        rm: false
+#     - name: Upload files via SCP
+#       uses: appleboy/scp-action@v0.1.7
+#       with:
+#         host: ${{ secrets.SERVER_HOST }}
+#         username: ${{ secrets.SERVER_USER }}
+#         key: ${{ secrets.SSH_PRIVATE_KEY }}
+#         source: "."
+#         target: "/home/admin/mc-git-repo"
+#         strip_components: 0
+#         rm: false
       
-    - name: Setup symlinks and backup
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          set -x
-          echo "🚀 开始设置符号链接..."
+#     - name: Setup symlinks and backup
+#       uses: appleboy/ssh-action@v1.0.3
+#       with:
+#         host: ${{ secrets.SERVER_HOST }}
+#         username: ${{ secrets.SERVER_USER }}
+#         key: ${{ secrets.SSH_PRIVATE_KEY }}
+#         script: |
+#           set -x
+#           echo "🚀 开始设置符号链接..."
           
-          # 确保目录存在和权限正确
-          sudo mkdir -p /home/admin/mc-git-repo
-          sudo chown admin:admin /home/admin/mc-git-repo
-          sudo chmod 755 /home/admin/mc-git-repo
+#           # 确保目录存在和权限正确
+#           sudo mkdir -p /home/admin/mc-git-repo
+#           sudo chown admin:admin /home/admin/mc-git-repo
+#           sudo chmod 755 /home/admin/mc-git-repo
           
-          # 备份服务器数据包和资源包
-          # if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
-          #   mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
-          #   echo "✅ 原datapacks已备份"
-          # fi
+#           # 备份服务器数据包和资源包
+#           # if [ -d "/home/admin/minecraft-server/world/datapacks" ] && [ ! -L "/home/admin/minecraft-server/world/datapacks" ]; then
+#           #   mv "/home/admin/minecraft-server/world/datapacks" "/home/admin/minecraft-server/world/datapacks.backup.$(date +%Y%m%d%H%M%S)"
+#           #   echo "✅ 原datapacks已备份"
+#           # fi
           
-          # if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
-          #   mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
-          #   echo "✅ 原resourcepacks已备份"
-          # fi
+#           # if [ -d "/home/admin/minecraft-server/resourcepacks" ] && [ ! -L "/home/admin/minecraft-server/resourcepacks" ]; then
+#           #   mv "/home/admin/minecraft-server/resourcepacks" "/home/admin/minecraft-server/resourcepacks.backup.$(date +%Y%m%d%H%M%S)"
+#           #   echo "✅ 原resourcepacks已备份"
+#           # fi
 
-          # 创建新目录
-          mkdir -p "/home/admin/minecraft-server/world/datapacks"
-          mkdir -p "/home/admin/minecraft-server/resourcepacks"
+#           # 创建新目录
+#           mkdir -p "/home/admin/minecraft-server/world/datapacks"
+#           mkdir -p "/home/admin/minecraft-server/resourcepacks"
           
-          # 从Git仓库复制文件到Minecraft服务器目录
-          echo "📁 同步数据包..."
-          if [ -d "/home/admin/mc-git-repo/datapacks" ]; then
-            cp -r "/home/admin/mc-git-repo/datapacks/"* "/home/admin/minecraft-server/world/datapacks/" 2>/dev/null || true
-          fi
+#           # 从Git仓库复制文件到Minecraft服务器目录
+#           echo "📁 同步数据包..."
+#           if [ -d "/home/admin/mc-git-repo/datapacks" ]; then
+#             cp -r "/home/admin/mc-git-repo/datapacks/"* "/home/admin/minecraft-server/world/datapacks/" 2>/dev/null || true
+#           fi
           
-          echo "📁 同步资源包..."
-          if [ -d "/home/admin/mc-git-repo/resourcepacks" ]; then
-            cp -r "/home/admin/mc-git-repo/resourcepacks/"* "/home/admin/minecraft-server/resourcepacks/" 2>/dev/null || true
-          fi
+#           echo "📁 同步资源包..."
+#           if [ -d "/home/admin/mc-git-repo/resourcepacks" ]; then
+#             cp -r "/home/admin/mc-git-repo/resourcepacks/"* "/home/admin/minecraft-server/resourcepacks/" 2>/dev/null || true
+#           fi
           
-          # 设置正确权限
-          chown -R admin:admin "/home/admin/minecraft-server/world/datapacks"
-          chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
-          chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
-          chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
+#           # 设置正确权限
+#           chown -R admin:admin "/home/admin/minecraft-server/world/datapacks"
+#           chown -R admin:admin "/home/admin/minecraft-server/resourcepacks"
+#           chmod -R 755 "/home/admin/minecraft-server/world/datapacks"
+#           chmod -R 755 "/home/admin/minecraft-server/resourcepacks"
           
-          echo "✅ 文件同步完成"
+#           echo "✅ 文件同步完成"
 
-          # 重启服务器
-          sleep 5
-          cd /home/admin/minecraft-server
-          bash ./start.sh
-          sleep 5
+#           # 重启服务器
+#           sleep 5
+#           cd /home/admin/minecraft-server
+#           bash ./start.sh
+#           sleep 5
           
-          echo "🎉 部署流程全部完成！"
+#           echo "🎉 部署流程全部完成！"
