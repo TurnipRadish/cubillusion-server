@@ -157,34 +157,45 @@ jobs:
     #     files: |
     #       ${{ steps.create_archive.outputs.archive_name }}
     #       # 移除了不存在的README.md和LICENSE文件
-    
-    - name: Upload to Gitee Release & Get URL
-      id: gitee_release
-      run: |
-        TAG_NAME="0.001"  # 临时固定测试，后续可改为动态
-        ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
-        
-        # 直接生成正确直链（无需调用 API）
-        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
-        
-        # 验证链接是否可访问（关键！）
-        if curl -s --head "$DOWNLOAD_URL" | grep "200\|302" >/dev/null; then
-          echo "✅ 直链可用: $DOWNLOAD_URL"
-          echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
-        else
-          echo "❌ 直链不可用，请手动上传文件到 Gitee Release 并确保文件名为: $ARCHIVE"
-          exit 1
-        fi
 
-    # - name: Update Server Properties
-    #   uses: appleboy/ssh-action@v1.0.3
-    #   with:
-    #     host: ${{ secrets.SERVER_HOST }}
-    #     username: ${{ secrets.SERVER_USER }}
-    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-    #     script: |
-    #       cd /home/admin/minecraft-server
-    #       # 更新资源包链接
-    #       sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
-    #       # 可选：添加 SHA1 校验（推荐）
-    #       echo "✅ 已更新 resource-pack 链接"
+    - name: Upload to Gitee Release
+      id: gitee_release
+      env:
+        GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+      run: |
+        TAG_NAME="resourcepack-${{ steps.version.outputs.timestamp }}"
+        ARCHIVE="${{ steps.create_archive.outputs.archive_name }}"
+
+        # 创建 Release
+        response=$(curl -s -X POST \
+          -H "Authorization: token $GITEE_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\"}" \
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases")
+
+        RELEASE_ID=$(echo "$response" | grep -o '"id":[0-9]*' | cut -d: -f2)
+        [ -z "$RELEASE_ID" ] && { echo "❌ 创建失败: $response"; exit 1; }
+
+        # 上传文件
+        curl -s -X POST \
+          -H "Authorization: token $GITEE_TOKEN" \
+          -F "file=@$ARCHIVE" \
+          -F "name=$ARCHIVE" \
+          "https://gitee.com/api/v5/repos/turnipradish/cubillusion-server/releases/$RELEASE_ID/attach_files"
+
+        # 输出 Minecraft 可用的直链
+        DOWNLOAD_URL="https://gitee.com/turnipradish/cubillusion-server/releases/download/$TAG_NAME/$ARCHIVE"
+        echo "gitee_download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
+    - name: Update Server Properties
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/admin/minecraft-server
+          sed -i "s|^resource-pack=.*|resource-pack=${{ steps.gitee_release.outputs.gitee_download_url }}|" server.properties
+          echo "✅ 已更新资源包链接"
+
+    
